@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vercel Pausa</title>
+<meta name="theme-color" content="#111827">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/api/icon?size=192">
+<link rel="apple-touch-icon" href="/api/icon?size=192">
+<style>
+  :root {
+    --bg: #f4f5f7; --card: #fff; --text: #14181f; --muted: #626b7a; --line: #e2e5ea;
+    --pause: #b45309; --pause-bg: #fef3c7; --go: #15803d; --go-bg: #dcfce7;
+    --btn: #111827; --btn-text: #fff; --danger: #b91c1c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117; --card: #161b22; --text: #e6edf3; --muted: #8b949e; --line: #2a313c;
+      --pause: #fbbf24; --pause-bg: #3a2c08; --go: #4ade80; --go-bg: #0f2f1b;
+      --btn: #e6edf3; --btn-text: #0d1117; --danger: #f87171;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { overscroll-behavior-y: contain; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 20px; margin: 0; }
+  button { font: inherit; cursor: pointer; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .hidden { display: none !important; }
+
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  header .title { flex: 1; min-width: 0; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .icon-btn {
+    width: 48px; height: 48px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--card); color: var(--text); font-size: 22px; line-height: 1;
+  }
+  .spin { animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+  .summary { padding: 14px 16px; margin-bottom: 12px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .summary b { font-size: 18px; }
+
+  .bulk { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+  .bulk button {
+    min-height: 56px; border-radius: 14px; border: 0; font-weight: 600; font-size: 16px; padding: 8px 12px;
+  }
+  #pauseAll { background: var(--pause-bg); color: var(--pause); }
+  #resumeAll { background: var(--go-bg); color: var(--go); }
+  .hint { color: var(--muted); font-size: 13px; margin: 0 2px 14px; display: flex; justify-content: space-between; gap: 8px; }
+  .link { background: none; border: 0; color: inherit; text-decoration: underline; padding: 6px 0; font-size: 13px; }
+
+  ul { list-style: none; margin: 0; padding: 0; }
+  li.row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  li.row:last-child { border-bottom: 0; }
+  li.row.self { opacity: .75; }
+  .check { width: 24px; height: 24px; flex: none; accent-color: var(--btn); }
+  .grow { flex: 1; min-width: 0; }
+  .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 99px; margin-right: 6px; }
+  .chip.on { background: var(--go-bg); color: var(--go); }
+  .chip.off { background: var(--pause-bg); color: var(--pause); }
+  .chip.lock { background: var(--line); color: var(--muted); }
+  .row .act {
+    flex: none; min-width: 92px; min-height: 44px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--card); color: var(--text); font-weight: 600;
+  }
+  .empty { padding: 28px 16px; text-align: center; color: var(--muted); }
+
+  .login { max-width: 360px; margin: 18vh auto 0; padding: 20px; }
+  .login h1 { margin-bottom: 4px; }
+  input[type=password] {
+    width: 100%; min-height: 48px; margin: 14px 0 10px; padding: 0 14px; font: inherit;
+    border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--text);
+  }
+  .primary { width: 100%; min-height: 48px; border-radius: 12px; border: 0; background: var(--btn); color: var(--btn-text); font-weight: 600; }
+  .err { color: var(--danger); font-size: 14px; min-height: 20px; margin: 4px 0 0; }
+
+  .errbox { padding: 14px 16px; margin-bottom: 12px; border-color: var(--danger); color: var(--danger); }
+  .errbox p { margin: 0 0 4px; font-size: 14px; word-break: break-word; }
+  .ptr { text-align: center; color: var(--muted); font-size: 13px; height: 0; overflow: hidden; transition: height .15s; }
+  .ptr.show { height: 28px; }
+
+  .foot { margin-top: 16px; text-align: center; }
+  .toast {
+    position: fixed; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom));
+    max-width: 608px; margin: 0 auto; padding: 12px 16px; border-radius: 12px;
+    background: var(--btn); color: var(--btn-text); font-size: 14px; z-index: 5;
+  }
+  dialog { border: 0; border-radius: 16px; padding: 20px; width: min(92vw, 420px); background: var(--card); color: var(--text); }
+  dialog::backdrop { background: rgba(0,0,0,.5); }
+  dialog h2 { margin: 0 0 8px; font-size: 18px; }
+  dialog ul { margin: 8px 0 14px; padding-left: 18px; list-style: disc; color: var(--muted); }
+  dialog .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  dialog .btns button { min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--text); font-weight: 600; }
+  dialog .btns .go { background: var(--pause-bg); color: var(--pause); border-color: transparent; }
+</style>
+</head>
+<body>
+<main>
+  <section id="loginView" class="card login hidden">
+    <h1>Vercel Pausa</h1>
+    <div class="sub">Pausa y reanuda tus proyectos desde el móvil.</div>
+    <form id="loginForm">
+      <input id="pw" type="password" placeholder="Contraseña" autocomplete="current-password" required>
+      <button class="primary" type="submit" id="loginBtn">Entrar</button>
+      <p class="err" id="loginErr" role="alert"></p>
+    </form>
+  </section>
+
+  <section id="appView" class="hidden">
+    <header>
+      <div class="title">
+        <h1>Vercel Pausa</h1>
+        <div class="sub" id="updated">Cargando…</div>
+      </div>
+      <button class="icon-btn" id="refresh" aria-label="Actualizar lista">↻</button>
+    </header>
+
+    <div class="ptr" id="ptr">Suelta para actualizar</div>
+
+    <div class="card errbox hidden" id="loadErr" role="alert">
+      <p id="loadErrText"></p>
+      <button class="link" id="retry">Reintentar</button>
+    </div>
+
+    <div class="card summary" id="summary"></div>
+
+    <div class="bulk">
+      <button id="pauseAll">Pausar todos</button>
+      <button id="resumeAll">Reanudar todos</button>
+    </div>
+    <div class="hint">
+      <span id="scopeHint"></span>
+      <button class="link" id="toggleAll">Quitar todas</button>
+    </div>
+
+    <div class="card"><ul id="list"></ul></div>
+
+    <div class="foot"><button class="link" id="logout">Cerrar sesión</button></div>
+  </section>
+</main>
+
+<dialog id="confirm">
+  <h2 id="confirmTitle"></h2>
+  <div class="sub">Mientras estén pausados, sus sitios de producción mostrarán un error 503.</div>
+  <ul id="confirmList"></ul>
+  <div class="btns">
+    <button id="confirmNo" type="button">Cancelar</button>
+    <button id="confirmYes" type="button" class="go">Pausar</button>
+  </div>
+</dialog>
+<div class="toast hidden" id="toast" role="status"></div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(k, fallback) { try { const v = localStorage.getItem(k); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sin almacenamiento */ } },
+    del(k) { try { localStorage.removeItem(k); } catch { /* sin almacenamiento */ } },
+  };
+
+  let token = store.get('vp_token', null);
+  let projects = [];
+  let fetchedAt = 0;
+  let busy = false;
+  let loadError = '';
+  // Se guardan los EXCLUIDOS: un proyecto nuevo entra por defecto en «todos».
+  let excluded = new Set(store.get('vp_excluded', []));
+
+  // ---------- Red ----------
+  async function api(path, options = {}) {
+    const res = await fetch(path, {
+      ...options,
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 401 && path !== '/api/login') { logout(); throw new Error('Sesión caducada'); }
+    if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+    return data;
+  }
+
+  async function load({ quiet = false } = {}) {
+    if (busy) return;
+    busy = true;
+    $('refresh').classList.add('spin');
+    try {
+      const data = await api('/api/projects');
+      projects = data.projects; fetchedAt = data.fetchedAt;
+      loadError = '';
+      busy = false;
+      render();
+    } catch (e) {
+      // El motivo se queda en pantalla (no solo en un aviso que desaparece).
+      loadError = e.message;
+      busy = false;
+      render();
+      $('updated').textContent = 'No se pudo actualizar';
+    } finally {
+      busy = false;
+      $('refresh').classList.remove('spin');
+    }
+  }
+
+  async function run(action, ids) {
+    if (busy || !ids.length) return;
+    busy = true;
+    setDisabled(true);
+    try {
+      const data = await api('/api/toggle', { method: 'POST', body: JSON.stringify({ action, ids }) });
+      projects = data.projects; fetchedAt = data.fetchedAt;
+      const ok = data.results.filter((r) => r.status === 'ok').length;
+      const failed = data.results.filter((r) => r.status === 'error');
+      const verb = action === 'pause' ? 'pausados' : 'reanudados';
+      toast(failed.length
+        ? `${ok} ${verb}; fallaron: ${failed.map((r) => r.name).join(', ')}`
+        : `${ok} ${verb}`);
+    } catch (e) {
+      toast(e.message);
+    } finally {
+      busy = false;
+      setDisabled(false);
+      render();
+    }
+  }
+
+  // ---------- Selección ----------
+  const selectable = () => projects.filter((p) => !p.self);
+  const included = () => selectable().filter((p) => !excluded.has(p.id));
+
+  function setExcluded(id, isExcluded) {
+    if (isExcluded) excluded.add(id); else excluded.delete(id);
+    store.set('vp_excluded', [...excluded]);
+    render();
+  }
+
+  // ---------- Pintado ----------
+  function el(tag, props = {}, ...children) {
+    const node = Object.assign(document.createElement(tag), props);
+    node.append(...children);
+    return node;
+  }
+
+  function ago(ts) {
+    const s = Math.max(0, Math.round((Date.now() - ts) / 1000));
+    if (s < 10) return 'ahora mismo';
+    if (s < 60) return `hace ${s} s`;
+    if (s < 3600) return `hace ${Math.round(s / 60)} min`;
+    return `hace ${Math.round(s / 3600)} h`;
+  }
+
+  function setDisabled(on) {
+    document.querySelectorAll('#appView button').forEach((b) => { b.disabled = on; });
+    if (!on) updateBulk();
+  }
+
+  function updateBulk() {
+    const inc = included();
+    const toPause = inc.filter((p) => !p.paused);
+    const toResume = inc.filter((p) => p.paused);
+    const partial = inc.length < selectable().length;
+    $('pauseAll').textContent = `${partial ? 'Pausar' : 'Pausar todos'} (${toPause.length})`;
+    $('resumeAll').textContent = `${partial ? 'Reanudar' : 'Reanudar todos'} (${toResume.length})`;
+    $('pauseAll').disabled = busy || !toPause.length;
+    $('resumeAll').disabled = busy || !toResume.length;
+  }
+
+  function render() {
+    const list = $('list');
+    list.replaceChildren();
+    const sel = selectable();
+    const paused = sel.filter((p) => p.paused).length;
+    const inc = included();
+
+    $('updated').textContent = fetchedAt ? `Actualizado ${ago(fetchedAt)}` : '';
+    $('summary').replaceChildren(
+      el('span', {}, el('b', { textContent: String(sel.length) }), ` proyecto${sel.length === 1 ? '' : 's'}`),
+      el('span', { className: 'sub', textContent: `${sel.length - paused} activos · ${paused} pausados` }),
+    );
+    $('scopeHint').textContent = inc.length === sel.length
+      ? 'Los botones actúan sobre todos'
+      : `Los botones actúan sobre ${inc.length} de ${sel.length}`;
+    $('toggleAll').textContent = excluded.size && sel.some((p) => excluded.has(p.id)) ? 'Marcar todas' : 'Quitar todas';
+    $('toggleAll').disabled = !sel.length;
+
+    $('loadErr').classList.toggle('hidden', !loadError);
+    $('loadErrText').textContent = loadError;
+    if (!projects.length && !loadError) {
+      list.append(el('li', { className: 'empty', textContent: 'Vercel no devuelve ningún proyecto para este equipo.' }));
+    }
+
+    for (const p of projects) {
+      const row = el('li', { className: `row${p.self ? ' self' : ''}` });
+      const meta = el('div', { className: 'sub' },
+        el('span', { className: `chip ${p.self ? 'lock' : p.paused ? 'off' : 'on'}`, textContent: p.self ? 'Protegida' : p.paused ? 'Pausado' : 'Activo' }),
+        p.self ? 'Esta app' : (p.framework || 'sin framework'));
+      const info = el('div', { className: 'grow' }, el('div', { className: 'name', textContent: p.name }), meta);
+
+      if (p.self) { row.append(el('span', { className: 'check', textContent: '🔒' }), info); }
+      else {
+        const box = el('input', { type: 'checkbox', className: 'check', checked: !excluded.has(p.id) });
+        box.setAttribute('aria-label', `Incluir ${p.name} en los botones generales`);
+        box.addEventListener('change', () => setExcluded(p.id, !box.checked));
+        const btn = el('button', { className: 'act', textContent: p.paused ? 'Reanudar' : 'Pausar' });
+        btn.addEventListener('click', () => p.paused ? run('unpause', [p.id]) : ask('pause', [p]));
+        row.append(box, info, btn);
+      }
+      list.append(row);
+    }
+    updateBulk();
+  }
+
+  // ---------- Confirmación (solo al pausar) ----------
+  function ask(action, targets) {
+    if (!targets.length) return;
+    $('confirmTitle').textContent = targets.length === 1 ? `¿Pausar ${targets[0].name}?` : `¿Pausar ${targets.length} proyectos?`;
+    $('confirmList').replaceChildren(...targets.map((p) => el('li', { textContent: p.name })));
+    $('confirmYes').onclick = () => { $('confirm').close(); run(action, targets.map((p) => p.id)); };
+    $('confirmNo').onclick = () => $('confirm').close();
+    $('confirm').showModal();
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg; t.classList.remove('hidden');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.add('hidden'), 4500);
+  }
+
+  // ---------- Sesión ----------
+  function showView() {
+    $('loginView').classList.toggle('hidden', Boolean(token));
+    $('appView').classList.toggle('hidden', !token);
+  }
+
+  function logout() {
+    token = null; projects = []; store.del('vp_token');
+    showView();
+  }
+
+  $('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('loginErr').textContent = '';
+    $('loginBtn').disabled = true;
+    try {
+      const data = await api('/api/login', { method: 'POST', body: JSON.stringify({ password: $('pw').value }) });
+      token = data.token; store.set('vp_token', token);
+      $('pw').value = '';
+      showView(); load();
+    } catch (err) {
+      $('loginErr').textContent = err.message;
+    } finally {
+      $('loginBtn').disabled = false;
+    }
+  });
+  $('logout').addEventListener('click', logout);
+
+  // ---------- Acciones generales ----------
+  $('pauseAll').addEventListener('click', () => ask('pause', included().filter((p) => !p.paused)));
+  $('resumeAll').addEventListener('click', () => run('unpause', included().filter((p) => p.paused).map((p) => p.id)));
+  $('toggleAll').addEventListener('click', () => {
+    const anyExcluded = selectable().some((p) => excluded.has(p.id));
+    excluded = anyExcluded ? new Set() : new Set(selectable().map((p) => p.id));
+    store.set('vp_excluded', [...excluded]);
+    render();
+  });
+
+  // ---------- Actualizar: botón, arrastrar hacia abajo y al volver a la app ----------
+  $('refresh').addEventListener('click', () => load());
+  $('retry').addEventListener('click', () => load());
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && token && Date.now() - fetchedAt > 15000) load({ quiet: true });
+  });
+  setInterval(() => { if (token && fetchedAt && !busy) $('updated').textContent = `Actualizado ${ago(fetchedAt)}`; }, 15000);
+
+  let startY = null;
+  document.addEventListener('touchstart', (e) => { startY = window.scrollY === 0 ? e.touches[0].clientY : null; }, { passive: true });
+  document.addEventListener('touchmove', (e) => {
+    if (startY === null) return;
+    $('ptr').classList.toggle('show', e.touches[0].clientY - startY > 70);
+  }, { passive: true });
+  document.addEventListener('touchend', () => {
+    const pulled = $('ptr').classList.contains('show');
+    $('ptr').classList.remove('show');
+    startY = null;
+    if (pulled && token) load();
+  });
+
+  // ---------- Arranque ----------
+  showView();
+  if (token) load();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "vercel-pausa",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pausa y reanuda proyectos de Vercel desde el móvil (PWA)",
+  "scripts": {
+    "dev": "node dev/server.js"
+  },
+  "engines": {
+    "node": "22.x"
+  }
+}

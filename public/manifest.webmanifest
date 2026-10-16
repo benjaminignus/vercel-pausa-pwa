@@ -1,0 +1,16 @@
+{
+  "name": "Vercel Pausa",
+  "short_name": "Pausa",
+  "description": "Pausa y reanuda proyectos de Vercel desde el móvil",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "icons": [
+    { "src": "/api/icon?size=192", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/api/icon?size=512", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
