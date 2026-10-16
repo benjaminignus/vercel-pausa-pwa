@@ -13,6 +13,8 @@ Vercel no tiene app oficial para Android, y su panel web es incómodo para esto.
 - **Se protege a sí misma**: nunca se pausa, para no quedarse bloqueada.
 - Contraseña propia; el token de Vercel vive solo en el servidor, nunca en el móvil.
 
+![Aplicación Vercel-Pausa](pausa.jpg)
+
 ## Despliega tu propia copia
 
 Cada persona despliega su copia con su propio token: este repo no contiene ninguna credencial.
